@@ -27,7 +27,8 @@ class Patient extends Model
         'current_medications',
         'insurance_provider',
         'insurance_policy_number',
-        'status'
+        'status',
+        'doctor_id'
     ];
 
     protected $casts = [
@@ -71,5 +72,11 @@ class Patient extends Model
     public function scopeInactive($query)
     {
         return $query->where('status', 'inactive');
+    }
+
+    // Relationships
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 }

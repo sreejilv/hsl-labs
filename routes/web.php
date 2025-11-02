@@ -78,6 +78,17 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     
     // System Settings
     Route::get('/settings', \App\Livewire\Admin\SystemSettings::class)->name('settings');
+    
+    // Purchase Order Management Routes
+    Route::prefix('purchase-orders')->name('purchase-orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'index'])->name('index');
+        Route::get('/history', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'history'])->name('history');
+        Route::get('/inventory', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'inventory'])->name('inventory');
+        Route::get('/{order}', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'show'])->name('show');
+        Route::patch('/{order}/confirm', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'confirm'])->name('confirm');
+        Route::patch('/{order}/cancel', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'cancel'])->name('cancel');
+        Route::patch('/{order}/deliver', [\App\Http\Controllers\Admin\PurchaseOrderController::class, 'markAsDelivered'])->name('deliver');
+    });
 });
 
 // Medical routes - accessible by surgeon and staff roles
@@ -89,14 +100,10 @@ Route::middleware(['auth', 'role:surgeon|staff'])->prefix('medical')->name('medi
         Route::get('/', [\App\Http\Controllers\Medical\PatientController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Medical\PatientController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Medical\PatientController::class, 'store'])->name('store');
-        Route::get('/trashed', [\App\Http\Controllers\Medical\PatientController::class, 'trashed'])->name('trashed');
         Route::get('/{patient}', [\App\Http\Controllers\Medical\PatientController::class, 'show'])->name('show');
         Route::get('/{patient}/edit', [\App\Http\Controllers\Medical\PatientController::class, 'edit'])->name('edit');
         Route::put('/{patient}', [\App\Http\Controllers\Medical\PatientController::class, 'update'])->name('update');
-        Route::delete('/{patient}', [\App\Http\Controllers\Medical\PatientController::class, 'destroy'])->name('destroy');
         Route::patch('/{patient}/toggle-status', [\App\Http\Controllers\Medical\PatientController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/{id}/restore', [\App\Http\Controllers\Medical\PatientController::class, 'restore'])->name('restore');
-        Route::delete('/{id}/force-delete', [\App\Http\Controllers\Medical\PatientController::class, 'forceDelete'])->name('force-delete');
     });
     
     // Staff Management Routes (only accessible by surgeons)
@@ -112,6 +119,43 @@ Route::middleware(['auth', 'role:surgeon|staff'])->prefix('medical')->name('medi
         Route::patch('/{staff}/toggle-status', [\App\Http\Controllers\Medical\StaffController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/{id}/restore', [\App\Http\Controllers\Medical\StaffController::class, 'restore'])->name('restore');
         Route::delete('/{id}/force-delete', [\App\Http\Controllers\Medical\StaffController::class, 'forceDelete'])->name('force-delete');
+    });
+    
+    // Purchase Order Routes
+    Route::prefix('purchase-orders')->name('purchase-orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'index'])->name('index');
+        Route::get('/products', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'products'])->name('products');
+        Route::get('/create', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'store'])->name('store');
+        Route::get('/inventory', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'inventory'])->name('inventory');
+        Route::get('/{order}', [\App\Http\Controllers\Medical\PurchaseOrderController::class, 'show'])->name('show');
+    });
+
+    // Product selling price management (doctors only)
+    Route::middleware('role:surgeon')->patch('/products/{product}/selling-price', [\App\Http\Controllers\Medical\ProductController::class, 'updateSellingPrice'])->name('products.update-selling-price');
+
+    // Sales Order Routes (for staff creating orders for patients)
+    Route::prefix('sales-orders')->name('sales-orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Medical\SalesOrderController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Medical\SalesOrderController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Medical\SalesOrderController::class, 'store'])->name('store');
+        Route::get('/{salesOrder}', [\App\Http\Controllers\Medical\SalesOrderController::class, 'show'])->name('show');
+    });
+
+    // Recurring Order Routes (for staff managing recurring patient orders)
+    Route::prefix('recurring-orders')->name('recurring-orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'store'])->name('store');
+        Route::get('/due', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'due'])->name('due');
+        Route::get('/{recurringOrder}', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'show'])->name('show');
+        Route::get('/{recurringOrder}/edit', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'edit'])->name('edit');
+        Route::put('/{recurringOrder}', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'update'])->name('update');
+        Route::post('/{recurringOrder}/process', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'process'])->name('process');
+        Route::patch('/{recurringOrder}/toggle-status', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/{recurringOrder}/pause', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'pause'])->name('pause');
+        Route::patch('/{recurringOrder}/resume', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'resume'])->name('resume');
+        Route::patch('/{recurringOrder}/cancel', [\App\Http\Controllers\Medical\RecurringOrderController::class, 'cancel'])->name('cancel');
     });
 });
 

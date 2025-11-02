@@ -65,4 +65,52 @@ class User extends Authenticatable
     {
         return $this->hasOne(StaffDetail::class);
     }
+
+    /**
+     * Get the patients that belong to this doctor
+     */
+    public function patients()
+    {
+        return $this->hasMany(Patient::class, 'doctor_id');
+    }
+
+    /**
+     * Get the staff members that belong to this doctor
+     */
+    public function staffMembers()
+    {
+        return $this->hasMany(StaffDetail::class, 'doctor_id');
+    }
+
+    /**
+     * Get the purchase orders created by this doctor
+     */
+    public function purchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'doctor_id');
+    }
+
+    /**
+     * Get the purchase orders confirmed by this admin
+     */
+    public function confirmedPurchaseOrders()
+    {
+        return $this->hasMany(PurchaseOrder::class, 'confirmed_by');
+    }
+
+    /**
+     * Get the sales orders for this doctor's inventory
+     */
+    public function doctorSalesOrders()
+    {
+        return $this->hasMany(SalesOrder::class, 'doctor_id');
+    }
+
+    /**
+     * Get the sales orders created by this staff member
+     */
+    public function staffSalesOrders()
+    {
+        return $this->hasMany(SalesOrder::class, 'staff_id');
+    }
 }

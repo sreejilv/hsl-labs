@@ -13,9 +13,11 @@
                         Patient Details
                     </h4>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('medical.patients.edit', $patient) }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-edit me-1"></i>Edit
-                        </a>
+                        @if(!isset($isStaff) || !$isStaff)
+                            <a href="{{ route('medical.patients.edit', $patient) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                        @endif
                         <a href="{{ route('medical.patients.index') }}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left me-1"></i>Back to List
                         </a>
@@ -224,20 +226,12 @@
                                         <a href="{{ route('medical.patients.edit', $patient) }}" class="btn btn-primary">
                                             <i class="fas fa-edit me-1"></i>Edit Patient
                                         </a>
-                                        <form action="{{ route('medical.patients.toggleStatus', $patient) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('medical.patients.toggle-status', $patient) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="btn btn-{{ $patient->status === 'active' ? 'warning' : 'success' }}">
                                                 <i class="fas fa-{{ $patient->status === 'active' ? 'pause' : 'play' }} me-1"></i>
                                                 {{ $patient->status === 'active' ? 'Deactivate' : 'Activate' }}
-                                            </button>
-                                        </form>
-                                        <form action="{{ route('medical.patients.destroy', $patient) }}" method="POST" class="d-inline"
-                                              onsubmit="return confirm('Are you sure you want to archive this patient?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="fas fa-archive me-1"></i>Archive Patient
                                             </button>
                                         </form>
                                     </div>

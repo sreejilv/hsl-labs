@@ -133,6 +133,31 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('admin.purchase-orders.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="collapse" 
+                               data-bs-target="#purchaseOrdersAdminMenu" aria-expanded="{{ request()->routeIs('admin.purchase-orders.*') ? 'true' : 'false' }}">
+                                <i class="fas fa-shopping-cart"></i>Orders
+                            </a>
+                            <div class="collapse {{ request()->routeIs('admin.purchase-orders.*') ? 'show' : '' }}" id="purchaseOrdersAdminMenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('admin.purchase-orders.index') ? 'active' : '' }}" href="{{ route('admin.purchase-orders.index') }}">
+                                            <i class="fas fa-list"></i>All Orders
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('admin.purchase-orders.history') ? 'active' : '' }}" href="{{ route('admin.purchase-orders.history') }}">
+                                            <i class="fas fa-history"></i>Order History
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('admin.purchase-orders.inventory') ? 'active' : '' }}" href="{{ route('admin.purchase-orders.inventory') }}">
+                                            <i class="fas fa-warehouse"></i>Inventory Status
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}" href="{{ route('admin.settings') }}">
                                 <i class="fas fa-cog"></i>System Settings
                             </a>

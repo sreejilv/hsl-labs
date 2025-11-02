@@ -4,21 +4,69 @@ namespace App\Http\Controllers\Medical;
 
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use App\Models\StaffDetail;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class PatientController extends Controller
 {
+    /**
+     * Get the doctor ID for the current user (either the doctor themselves or their assigned doctor if staff)
+     */
+    private function getDoctorId()
+    {
+        $user = Auth::user();
+        
+        // Check if user is a surgeon
+        if ($user->hasRole('surgeon')) {
+            return $user->id;
+        } 
+        // Check if user is staff
+        elseif ($user->hasRole('staff')) {
+            $staffDetail = StaffDetail::where('user_id', $user->id)->first();
+            return $staffDetail ? $staffDetail->doctor_id : null;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if the current user can access a specific patient
+     */
+    private function canAccessPatient(Patient $patient)
+    {
+        $doctorId = $this->getDoctorId();
+        return $doctorId && $patient->doctor_id === $doctorId;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $patients = Patient::with([])
+        $doctorId = $this->getDoctorId();
+        
+        if (!$doctorId) {
+            abort(403, 'Access denied. No doctor assigned.');
+        }
+        
+        $patients = Patient::with(['doctor'])
+            ->where('doctor_id', $doctorId)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('medical.patients.index', compact('patients'));
+        // Get current user info for display purposes
+        $user = Auth::user();
+        $isStaff = $user->hasRole('staff');
+        $doctorName = null;
+        
+        if ($isStaff) {
+            $doctor = \App\Models\User::find($doctorId);
+            $doctorName = $doctor ? $doctor->first_name . ' ' . $doctor->last_name : 'Unknown Doctor';
+        }
+
+        return view('medical.patients.index', compact('patients', 'isStaff', 'doctorName'));
     }
 
     /**
@@ -26,6 +74,19 @@ class PatientController extends Controller
      */
     public function create()
     {
+        $doctorId = $this->getDoctorId();
+        
+        if (!$doctorId) {
+            abort(403, 'Access denied. No doctor assigned.');
+        }
+        
+        // Only doctors can create patients, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->route('medical.patients.index')
+                ->with('error', 'Only doctors can create new patients.');
+        }
+        
         return view('medical.patients.create');
     }
 
@@ -34,6 +95,18 @@ class PatientController extends Controller
      */
     public function store(Request $request)
     {
+        // Only doctors can create patients, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->route('medical.patients.index')
+                ->with('error', 'Only doctors can create new patients.');
+        }
+        
+        $doctorId = $this->getDoctorId();
+        
+        if (!$doctorId) {
+            abort(403, 'Access denied. No doctor assigned.');
+        }
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -58,6 +131,9 @@ class PatientController extends Controller
         $validated['medical_history'] = $validated['medical_history'] ? array_filter(array_map('trim', explode(',', $validated['medical_history']))) : null;
         $validated['current_medications'] = $validated['current_medications'] ? array_filter(array_map('trim', explode(',', $validated['current_medications']))) : null;
 
+        // Assign the authenticated doctor
+        $validated['doctor_id'] = $doctorId;
+
         Patient::create($validated);
 
         return redirect()->route('medical.patients.index')
@@ -69,7 +145,16 @@ class PatientController extends Controller
      */
     public function show(Patient $patient)
     {
-        return view('medical.patients.show', compact('patient'));
+        // Ensure the patient belongs to the authenticated doctor or staff's assigned doctor
+        if (!$this->canAccessPatient($patient)) {
+            abort(403, 'Unauthorized access to patient record.');
+        }
+
+        // Check if current user is staff
+        $user = Auth::user();
+        $isStaff = $user->hasRole('staff');
+
+        return view('medical.patients.show', compact('patient', 'isStaff'));
     }
 
     /**
@@ -77,6 +162,18 @@ class PatientController extends Controller
      */
     public function edit(Patient $patient)
     {
+        // Ensure the patient belongs to the authenticated doctor or staff's assigned doctor
+        if (!$this->canAccessPatient($patient)) {
+            abort(403, 'Unauthorized access to patient record.');
+        }
+        
+        // Only doctors can edit patients, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->route('medical.patients.show', $patient)
+                ->with('error', 'Only doctors can edit patient records.');
+        }
+
         return view('medical.patients.edit', compact('patient'));
     }
 
@@ -85,6 +182,18 @@ class PatientController extends Controller
      */
     public function update(Request $request, Patient $patient)
     {
+        // Ensure the patient belongs to the authenticated doctor or staff's assigned doctor
+        if (!$this->canAccessPatient($patient)) {
+            abort(403, 'Unauthorized access to patient record.');
+        }
+        
+        // Only doctors can update patients, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->route('medical.patients.show', $patient)
+                ->with('error', 'Only doctors can update patient records.');
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -120,46 +229,21 @@ class PatientController extends Controller
      */
     public function destroy(Patient $patient)
     {
-        $patient->delete();
+        // Ensure the patient belongs to the authenticated doctor or staff's assigned doctor
+        if (!$this->canAccessPatient($patient)) {
+            abort(403, 'Unauthorized access to patient record.');
+        }
+        
+        // Only doctors can delete patients, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->route('medical.patients.index')
+                ->with('error', 'Only doctors can delete patient records.');
+        }
 
+        // Archive functionality removed as per requirements
         return redirect()->route('medical.patients.index')
-            ->with('success', 'Patient archived successfully.');
-    }
-
-    /**
-     * Display trashed patients.
-     */
-    public function trashed()
-    {
-        $patients = Patient::onlyTrashed()
-            ->orderBy('deleted_at', 'desc')
-            ->paginate(10);
-
-        return view('medical.patients.trashed', compact('patients'));
-    }
-
-    /**
-     * Restore a trashed patient.
-     */
-    public function restore($id)
-    {
-        $patient = Patient::onlyTrashed()->findOrFail($id);
-        $patient->restore();
-
-        return redirect()->route('medical.patients.index')
-            ->with('success', 'Patient restored successfully.');
-    }
-
-    /**
-     * Permanently delete a patient.
-     */
-    public function forceDelete($id)
-    {
-        $patient = Patient::onlyTrashed()->findOrFail($id);
-        $patient->forceDelete();
-
-        return redirect()->route('medical.patients.trashed')
-            ->with('success', 'Patient permanently deleted.');
+            ->with('info', 'Archive functionality has been disabled.');
     }
 
     /**
@@ -167,6 +251,18 @@ class PatientController extends Controller
      */
     public function toggleStatus(Patient $patient)
     {
+        // Ensure the patient belongs to the authenticated doctor or staff's assigned doctor
+        if (!$this->canAccessPatient($patient)) {
+            abort(403, 'Unauthorized access to patient record.');
+        }
+        
+        // Only doctors can toggle patient status, not staff
+        $user = Auth::user();
+        if ($user->hasRole('staff')) {
+            return redirect()->back()
+                ->with('error', 'Only doctors can change patient status.');
+        }
+
         $patient->update([
             'status' => $patient->status === 'active' ? 'inactive' : 'active'
         ]);

@@ -11,14 +11,16 @@
                     <h4 class="mb-0">
                         <i class="fas fa-user-injured text-primary me-2"></i>
                         Patient List
+                        @if(isset($isStaff) && $isStaff && isset($doctorName))
+                            <small class="text-muted d-block">Viewing patients of Dr. {{ $doctorName }}</small>
+                        @endif
                     </h4>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('medical.patients.create') }}" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i>Add Patient
-                        </a>
-                        <a href="{{ route('medical.patients.trashed') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-archive me-1"></i>Archived
-                        </a>
+                        @if(!isset($isStaff) || !$isStaff)
+                            <a href="{{ route('medical.patients.create') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>Add Patient
+                            </a>
+                        @endif
                     </div>
                 </div>
                 <div class="card-body">
@@ -26,6 +28,20 @@
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+                    
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+                    
+                    @if(isset($isStaff) && $isStaff)
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You are viewing patients assigned to your supervising doctor. You can view patient details but cannot create, edit, or modify patient records.
                         </div>
                     @endif
 
@@ -83,29 +99,22 @@
                                                        class="btn btn-sm btn-outline-info" title="View">
                                                         <i class="fas fa-eye"></i>
                                                     </a>
-                                                    <a href="{{ route('medical.patients.edit', $patient) }}" 
-                                                       class="btn btn-sm btn-outline-primary" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <form action="{{ route('medical.patients.toggleStatus', $patient) }}" 
-                                                          method="POST" class="d-inline">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" 
-                                                                class="btn btn-sm btn-outline-{{ $patient->status === 'active' ? 'warning' : 'success' }}" 
-                                                                title="{{ $patient->status === 'active' ? 'Deactivate' : 'Activate' }}">
-                                                            <i class="fas fa-{{ $patient->status === 'active' ? 'pause' : 'play' }}"></i>
-                                                        </button>
-                                                    </form>
-                                                    <form action="{{ route('medical.patients.destroy', $patient) }}" 
-                                                          method="POST" class="d-inline"
-                                                          onsubmit="return confirm('Are you sure you want to archive this patient?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Archive">
-                                                            <i class="fas fa-archive"></i>
-                                                        </button>
-                                                    </form>
+                                                    @if(!isset($isStaff) || !$isStaff)
+                                                        <a href="{{ route('medical.patients.edit', $patient) }}" 
+                                                           class="btn btn-sm btn-outline-primary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <form action="{{ route('medical.patients.toggle-status', $patient) }}" 
+                                                              method="POST" class="d-inline">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button type="submit" 
+                                                                    class="btn btn-sm btn-outline-{{ $patient->status === 'active' ? 'warning' : 'success' }}" 
+                                                                    title="{{ $patient->status === 'active' ? 'Deactivate' : 'Activate' }}">
+                                                                <i class="fas fa-{{ $patient->status === 'active' ? 'pause' : 'play' }}"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>

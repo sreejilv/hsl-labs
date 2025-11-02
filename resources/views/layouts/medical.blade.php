@@ -9,6 +9,9 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -115,28 +118,25 @@
                             </a>
                             <div class="collapse {{ request()->routeIs('medical.patients.*') ? 'show' : '' }}" id="patientRecordsMenu">
                                 <ul class="nav nav-pills flex-column ms-3">
-                                    <li class="nav-item">
-                                        <a class="nav-link {{ request()->routeIs('medical.patients.create') ? 'active' : '' }}" href="{{ route('medical.patients.create') }}">
-                                            <i class="fas fa-user-plus"></i>Add Patient
-                                        </a>
-                                    </li>
+                                    @if(auth()->user()->hasRole('surgeon'))
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('medical.patients.create') ? 'active' : '' }}" href="{{ route('medical.patients.create') }}">
+                                                <i class="fas fa-user-plus"></i>Add Patient
+                                            </a>
+                                        </li>
+                                    @endif
                                     <li class="nav-item">
                                         <a class="nav-link {{ request()->routeIs('medical.patients.index') ? 'active' : '' }}" href="{{ route('medical.patients.index') }}">
-                                            <i class="fas fa-list"></i>Patient List
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link {{ request()->routeIs('medical.patients.trashed') ? 'active' : '' }}" href="{{ route('medical.patients.trashed') }}">
-                                            <i class="fas fa-archive"></i>Archived Patients
+                                            <i class="fas fa-list"></i>
+                                            @if(auth()->user()->hasRole('staff'))
+                                                Doctor's Patients
+                                            @else
+                                                Patient List
+                                            @endif
                                         </a>
                                     </li>
                                 </ul>
                             </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-calendar-alt"></i>Appointments
-                            </a>
                         </li>
                         @if(auth()->user()->hasRole('surgeon'))
                         <li class="nav-item">
@@ -165,14 +165,126 @@
                                 <i class="fas fa-pills"></i>Pharmacy
                             </a>
                         </li>
+                        @if(auth()->user()->hasRole('surgeon'))
+                        <li class="nav-item">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('medical.purchase-orders.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="collapse" 
+                               data-bs-target="#purchaseOrdersMenu" aria-expanded="{{ request()->routeIs('medical.purchase-orders.*') ? 'true' : 'false' }}">
+                                <i class="fas fa-shopping-cart"></i>Purchase Orders
+                            </a>
+                            <div class="collapse {{ request()->routeIs('medical.purchase-orders.*') ? 'show' : '' }}" id="purchaseOrdersMenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.purchase-orders.products') ? 'active' : '' }}" href="{{ route('medical.purchase-orders.products') }}">
+                                            <i class="fas fa-store"></i>Browse Products
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.purchase-orders.index') ? 'active' : '' }}" href="{{ route('medical.purchase-orders.index') }}">
+                                            <i class="fas fa-list"></i>My Orders
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.purchase-orders.inventory') ? 'active' : '' }}" href="{{ route('medical.purchase-orders.inventory') }}">
+                                            <i class="fas fa-boxes"></i>Inventory in Hand
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        @endif
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="fas fa-calendar-alt"></i>Appointments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('medical.sales-orders.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="collapse" 
+                               data-bs-target="#salesOrdersMenu" aria-expanded="{{ request()->routeIs('medical.sales-orders.*') ? 'true' : 'false' }}">
+                                <i class="fas fa-receipt"></i>
+                                @if(auth()->user()->hasRole('staff'))
+                                    Patient Orders
+                                @else
+                                    Sales Orders
+                                @endif
+                            </a>
+                            <div class="collapse {{ request()->routeIs('medical.sales-orders.*') ? 'show' : '' }}" id="salesOrdersMenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    @if(auth()->user()->hasRole('staff'))
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('medical.sales-orders.create') ? 'active' : '' }}" href="{{ route('medical.sales-orders.create') }}">
+                                                <i class="fas fa-plus"></i>Create Order
+                                            </a>
+                                        </li>
+                                    @endif
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.sales-orders.index') ? 'active' : '' }}" href="{{ route('medical.sales-orders.index') }}">
+                                            <i class="fas fa-list"></i>
+                                            @if(auth()->user()->hasRole('staff'))
+                                                My Orders
+                                            @else
+                                                All Sales Orders
+                                            @endif
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
+                        <!-- Recurring Orders Menu -->
+                        <li class="nav-item">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs('medical.recurring-orders.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="collapse" 
+                               data-bs-target="#recurringOrdersMenu" aria-expanded="{{ request()->routeIs('medical.recurring-orders.*') ? 'true' : 'false' }}">
+                                <i class="fas fa-sync-alt"></i>Recurring Orders
+                            </a>
+                            <div class="collapse {{ request()->routeIs('medical.recurring-orders.*') ? 'show' : '' }}" id="recurringOrdersMenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    @if(auth()->user()->hasRole('staff'))
+                                        <li class="nav-item">
+                                            <a class="nav-link {{ request()->routeIs('medical.recurring-orders.create') ? 'active' : '' }}" href="{{ route('medical.recurring-orders.create') }}">
+                                                <i class="fas fa-plus"></i>Setup Recurring Order
+                                            </a>
+                                        </li>
+                                    @endif
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.recurring-orders.index') ? 'active' : '' }}" href="{{ route('medical.recurring-orders.index') }}">
+                                            <i class="fas fa-list"></i>All Recurring Orders
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link {{ request()->routeIs('medical.recurring-orders.due') ? 'active' : '' }}" href="{{ route('medical.recurring-orders.due') }}">
+                                            <i class="fas fa-bell"></i>Due for Processing
+                                            @php
+                                                $user = auth()->user();
+                                                $dueCount = 0;
+                                                if ($user->hasRole('staff')) {
+                                                    $dueCount = \App\Models\RecurringOrder::where('staff_id', $user->id)
+                                                                                          ->where('status', 'active')
+                                                                                          ->where('next_due_date', '<=', now()->toDateString())
+                                                                                          ->count();
+                                                } elseif ($user->hasRole('surgeon')) {
+                                                    $dueCount = \App\Models\RecurringOrder::where('doctor_id', $user->id)
+                                                                                          ->where('status', 'active')
+                                                                                          ->where('next_due_date', '<=', now()->toDateString())
+                                                                                          ->count();
+                                                }
+                                            @endphp
+                                            @if($dueCount > 0)
+                                                <span class="badge bg-danger ms-1">{{ $dueCount }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        
                         <li class="nav-item">
                             <a class="nav-link" href="#">
                                 <i class="fas fa-chart-line"></i>Reports
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-cog"></i>Settings
+                            <a class="nav-link" href="{{ route('profile') }}">
+                                <i class="fas fa-user-circle"></i>Profile
                             </a>
                         </li>
                         <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
@@ -256,13 +368,22 @@
         </div>
     </div>
 
+    <!-- jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- FontAwesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    
     <script>
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle')?.addEventListener('click', function() {
             document.getElementById('sidebar').classList.toggle('show');
         });
     </script>
+    
+    @stack('scripts')
 </body>
 </html>

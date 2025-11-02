@@ -8,6 +8,7 @@ use App\Models\StaffDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Role;
 
 class StaffController extends Controller
@@ -17,7 +18,8 @@ class StaffController extends Controller
      */
     public function index(Request $request)
     {
-        $query = StaffDetail::with('user');
+        $query = StaffDetail::with('user')
+            ->where('doctor_id', Auth::id());
 
         // Search functionality
         if ($request->filled('search')) {
@@ -82,7 +84,7 @@ class StaffController extends Controller
             'address' => 'nullable|string',
             'hire_date' => 'required|date',
             'salary' => 'nullable|numeric|min:0',
-            'shift' => 'nullable|in:day,night,rotating',
+            'shift' => 'required|in:day,night,rotating',
             'is_active' => 'boolean'
         ]);
 
@@ -111,9 +113,10 @@ class StaffController extends Controller
                 'position' => $request->position,
                 'hire_date' => $request->hire_date,
                 'salary' => $request->salary,
-                'shift' => $request->shift,
+                'shift' => $request->shift ?: 'day', // Default to 'day' if empty
                 'is_active' => $request->boolean('is_active', true),
-                'created_by' => \Illuminate\Support\Facades\Auth::id(), // Track who created this staff member
+                'created_by' => Auth::id(), // Track who created this staff member
+                'doctor_id' => Auth::id(), // Assign to authenticated doctor
             ]);
         });
 
@@ -126,6 +129,11 @@ class StaffController extends Controller
      */
     public function show(StaffDetail $staff)
     {
+        // Ensure the staff belongs to the authenticated doctor
+        if ($staff->doctor_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to staff record.');
+        }
+
         $staff->load('user');
         return view('medical.staff.show', compact('staff'));
     }
@@ -135,6 +143,11 @@ class StaffController extends Controller
      */
     public function edit(StaffDetail $staff)
     {
+        // Ensure the staff belongs to the authenticated doctor
+        if ($staff->doctor_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to staff record.');
+        }
+
         $staff->load('user');
         $departments = [
             'Nursing', 'Laboratory', 'Radiology', 'Pharmacy', 
@@ -156,6 +169,11 @@ class StaffController extends Controller
      */
     public function update(Request $request, StaffDetail $staff)
     {
+        // Ensure the staff belongs to the authenticated doctor
+        if ($staff->doctor_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to staff record.');
+        }
+
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -213,6 +231,11 @@ class StaffController extends Controller
      */
     public function destroy(StaffDetail $staff)
     {
+        // Ensure the staff belongs to the authenticated doctor
+        if ($staff->doctor_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to staff record.');
+        }
+
         DB::transaction(function () use ($staff) {
             // Soft delete the staff detail (this will also deactivate the user account)
             $staff->user->update(['is_active' => false]);
@@ -228,6 +251,11 @@ class StaffController extends Controller
      */
     public function toggleStatus(StaffDetail $staff)
     {
+        // Ensure the staff belongs to the authenticated doctor
+        if ($staff->doctor_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to staff record.');
+        }
+
         $staff->update(['is_active' => !$staff->is_active]);
 
         $status = $staff->is_active ? 'activated' : 'deactivated';
@@ -241,6 +269,7 @@ class StaffController extends Controller
     public function trashed(Request $request)
     {
         $query = StaffDetail::onlyTrashed()
+            ->where('doctor_id', Auth::id())
             ->with(['user', 'createdBy'])
             ->latest('deleted_at');
 
@@ -268,7 +297,10 @@ class StaffController extends Controller
      */
     public function restore($id)
     {
-        $staff = StaffDetail::onlyTrashed()->findOrFail($id);
+        $staff = StaffDetail::onlyTrashed()
+            ->where('doctor_id', Auth::id())
+            ->findOrFail($id);
+        
         $staff->restore();
 
         // Reactivate the user account
@@ -283,7 +315,9 @@ class StaffController extends Controller
      */
     public function forceDelete($id)
     {
-        $staff = StaffDetail::onlyTrashed()->findOrFail($id);
+        $staff = StaffDetail::onlyTrashed()
+            ->where('doctor_id', Auth::id())
+            ->findOrFail($id);
         
         // Permanently delete the user as well
         $user = $staff->user;

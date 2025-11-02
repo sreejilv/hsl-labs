@@ -132,10 +132,10 @@
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6">
-                            <label for="shift" class="form-label">Work Shift</label>
-                            <select class="form-select" id="shift" name="shift">
+                            <label for="shift" class="form-label">Work Shift <span class="text-danger">*</span></label>
+                            <select class="form-select" id="shift" name="shift" required>
                                 <option value="">Select Shift</option>
-                                <option value="day" {{ old('shift') === 'day' ? 'selected' : '' }}>Day Shift</option>
+                                <option value="day" {{ old('shift', 'day') === 'day' ? 'selected' : '' }}>Day Shift</option>
                                 <option value="night" {{ old('shift') === 'night' ? 'selected' : '' }}>Night Shift</option>
                                 <option value="rotating" {{ old('shift') === 'rotating' ? 'selected' : '' }}>Rotating Shift</option>
                             </select>

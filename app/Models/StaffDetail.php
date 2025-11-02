@@ -23,7 +23,8 @@ class StaffDetail extends Model
         'emergency_contact_phone',
         'qualifications',
         'notes',
-        'created_by'
+        'created_by',
+        'doctor_id'
     ];
 
     protected $casts = [
@@ -47,6 +48,14 @@ class StaffDetail extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the doctor that owns this staff member
+     */
+    public function doctor()
+    {
+        return $this->belongsTo(User::class, 'doctor_id');
     }
 
     /**

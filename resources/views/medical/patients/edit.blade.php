@@ -14,7 +14,7 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('medical.patients.update', $patient) }}" method="POST">
+                    <form id="patientEditForm" action="{{ route('medical.patients.update', $patient) }}" method="POST" novalidate>
                         @csrf
                         @method('PUT')
                         
@@ -224,7 +224,7 @@
                         <div class="row">
                             <div class="col-12">
                                 <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" id="updateBtn" class="btn btn-primary">
                                         <i class="fas fa-save me-1"></i>Update Patient
                                     </button>
                                     <a href="{{ route('medical.patients.show', $patient) }}" class="btn btn-secondary">
@@ -239,4 +239,152 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('patientEditForm');
+    const updateBtn = document.getElementById('updateBtn');
+    
+    // Field validation rules
+    const validationRules = {
+        first_name: { required: true, minLength: 2, maxLength: 255, pattern: /^[A-Za-z\s'-]+$/ },
+        last_name: { required: true, minLength: 2, maxLength: 255, pattern: /^[A-Za-z\s'-]+$/ },
+        email: { required: false, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+        phone: { required: true, pattern: /^[0-9+\-\s\(\)]{10,20}$/ },
+        date_of_birth: { required: true, type: 'date' },
+        gender: { required: true },
+        address: { required: true, minLength: 10, maxLength: 500 },
+        emergency_contact_name: { required: true, minLength: 2, maxLength: 255, pattern: /^[A-Za-z\s'-]+$/ },
+        emergency_contact_phone: { required: true, pattern: /^[0-9+\-\s\(\)]{10,20}$/ },
+        status: { required: true }
+    };
+
+    // Real-time validation for each field
+    Object.keys(validationRules).forEach(fieldName => {
+        const field = document.getElementById(fieldName);
+        if (field) {
+            field.addEventListener('input', () => validateField(fieldName));
+            field.addEventListener('blur', () => validateField(fieldName));
+        }
+    });
+
+    function validateField(fieldName) {
+        const field = document.getElementById(fieldName);
+        if (!field) return true;
+        
+        const rules = validationRules[fieldName];
+        const value = field.value.trim();
+        
+        let isValid = true;
+        let errorMessage = '';
+
+        // Required field validation
+        if (rules.required && !value) {
+            isValid = false;
+            errorMessage = `${getFieldLabel(fieldName)} is required.`;
+        }
+        // Email validation (only if not empty for optional fields)
+        else if (fieldName === 'email' && value && !rules.pattern.test(value)) {
+            isValid = false;
+            errorMessage = 'Please enter a valid email address.';
+        }
+        // Pattern validation
+        else if (value && rules.pattern && !rules.pattern.test(value)) {
+            isValid = false;
+            if (fieldName.includes('phone')) {
+                errorMessage = 'Please enter a valid phone number (10-20 digits).';
+            } else if (fieldName.includes('name')) {
+                errorMessage = 'Please enter a valid name (letters, spaces, hyphens, and apostrophes only).';
+            }
+        }
+        // Length validation
+        else if (value && rules.minLength && value.length < rules.minLength) {
+            isValid = false;
+            errorMessage = `${getFieldLabel(fieldName)} must be at least ${rules.minLength} characters.`;
+        }
+        else if (value && rules.maxLength && value.length > rules.maxLength) {
+            isValid = false;
+            errorMessage = `${getFieldLabel(fieldName)} must not exceed ${rules.maxLength} characters.`;
+        }
+        // Date validation
+        else if (rules.type === 'date' && value) {
+            const inputDate = new Date(value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (inputDate >= today) {
+                isValid = false;
+                errorMessage = 'Date of birth must be in the past.';
+            }
+        }
+
+        // Update field appearance
+        if (isValid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+            
+            // Show custom error message
+            const feedback = field.parentNode.querySelector('.invalid-feedback');
+            if (feedback) {
+                feedback.textContent = errorMessage;
+            }
+        }
+
+        return isValid;
+    }
+
+    function validateForm() {
+        let isFormValid = true;
+        
+        Object.keys(validationRules).forEach(fieldName => {
+            if (!validateField(fieldName)) {
+                isFormValid = false;
+            }
+        });
+
+        return isFormValid;
+    }
+
+    function getFieldLabel(fieldName) {
+        const labels = {
+            first_name: 'First name',
+            last_name: 'Last name',
+            email: 'Email',
+            phone: 'Phone',
+            date_of_birth: 'Date of birth',
+            gender: 'Gender',
+            address: 'Address',
+            emergency_contact_name: 'Emergency contact name',
+            emergency_contact_phone: 'Emergency contact phone',
+            status: 'Status'
+        };
+        return labels[fieldName] || fieldName;
+    }
+
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (validateForm()) {
+            // Show loading state
+            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
+            updateBtn.disabled = true;
+            
+            // Submit the form
+            form.submit();
+        } else {
+            // Scroll to first error
+            const firstInvalidField = form.querySelector('.is-invalid');
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalidField.focus();
+            }
+        }
+    });
+});
+</script>
+
 @endsection
