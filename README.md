@@ -47,7 +47,7 @@ Install all dependencies using the command below.
 
 ```bash
 git clone https://github.com/sreejilv/hsl-labs.git
-cd hsl-labs-provider-system
+cd hsl-labs
 ```
 
 ---
@@ -162,35 +162,98 @@ The system includes multiple user roles with different access levels. After runn
 
 ## 🧱 Running with Docker
 
-### 1️⃣ Build and Start Containers
+### Quick Setup (Recommended)
 
-If you prefer to run this project inside Docker:
+The easiest way to run HSL Labs locally is using the automated setup script:
 
 ```bash
+# Make setup script executable and run
+chmod +x docker-setup.sh
+./docker-setup.sh
+```
+
+This script will:
+
+-   ✅ Set up environment configuration
+-   ✅ Build and start all Docker containers
+-   ✅ Install PHP and Node.js dependencies
+-   ✅ Run database migrations and seeders
+-   ✅ Build frontend assets
+-   ✅ Set proper file permissions
+
+### Manual Docker Setup
+
+If you prefer manual setup:
+
+```bash
+# Copy environment file
+cp .env.docker .env
+
+# Build and start containers
 docker-compose up -d --build
+
+# Install dependencies and setup database
+docker-compose exec app composer install
+docker-compose exec app php artisan key:generate
+docker-compose exec app php artisan migrate --seed
+
+# Build assets
+docker-compose exec node npm install && npm run build
 ```
 
-### 2️⃣ Access Containers
+### 🌐 Access Points
+
+Once containers are running:
+
+| Service              | URL                   | Purpose                 |
+| -------------------- | --------------------- | ----------------------- |
+| **Main Application** | http://localhost      | HSL Labs Medical Portal |
+| **PHPMyAdmin**       | http://localhost:8080 | Database Management     |
+| **MailHog**          | http://localhost:8025 | Email Testing           |
+
+### 🐳 Docker Services
+
+The Docker setup includes:
+
+-   **app**: Laravel application (PHP 8.2-FPM)
+-   **nginx**: Web server (Nginx)
+-   **mysql**: Database (MySQL 8.0)
+-   **redis**: Cache and session storage
+-   **queue**: Queue worker for background jobs
+-   **scheduler**: Cron job scheduler
+-   **phpmyadmin**: Database management interface
+-   **mailhog**: Email testing service
+
+### 📋 Database Connection
+
+| Setting      | Value        |
+| ------------ | ------------ |
+| **Host**     | localhost    |
+| **Port**     | 3306         |
+| **Database** | hsl_labs     |
+| **Username** | hsl_user     |
+| **Password** | hsl_password |
+
+### 🔧 Useful Docker Commands
 
 ```bash
-docker exec -it laravel-app bash
+# View logs
+docker-compose logs -f app
+
+# Access application shell
+docker-compose exec app bash
+
+# Stop all services
+docker-compose down
+
+# Restart services
+docker-compose restart
+
+# Update dependencies
+docker-compose exec app composer update
 ```
 
-### 3️⃣ Run Migrations & Seeders inside Docker
-
-```bash
-php artisan migrate --seed
-```
-
-### 4️⃣ Access Application
-
-Once containers are running, open:
-
-```
-http://localhost
-```
-
-> Ensure your `docker-compose.yml` maps the ports correctly and defines `app`, `mysql`, and `nginx` services.
+> 📚 For detailed Docker commands and troubleshooting, see `docker/DOCKER_COMMANDS.md`
 
 ---
 
@@ -208,6 +271,6 @@ php artisan serve
     ```bash
     php artisan migrate:fresh --seed
     ```
-    The files PLAN.md and ARCHITECTURE.md have been added to the documents folder.
+    The files PLAN.md and ARCHITECTURE.md have been added to the documents folder. Additionally, the ER diagram and sample SQL files have also been included in the same folder.
 
 ---

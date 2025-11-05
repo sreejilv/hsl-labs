@@ -1,0 +1,25 @@
+parameters:
+    level: 6
+    paths:
+        - app
+        - config
+        - database
+        - routes
+    excludePaths:
+        - vendor
+        - storage
+        - bootstrap/cache
+        - node_modules
+    tmpDir: storage/framework/cache/phpstan
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+        - '#Class .* not found#'
+        - '#Access to an undefined property#'
+        - '#Call to an undefined method#'
+    scanDirectories:
+        - vendor/laravel/framework
+    scanFiles:
+        - vendor/laravel/framework/src/Illuminate/Foundation/helpers.php
+        - vendor/laravel/framework/src/Illuminate/Support/helpers.php

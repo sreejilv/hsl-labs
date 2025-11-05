@@ -1,0 +1,10 @@
+# Laravel Schedule Runner
+* * * * * www-data cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
+
+# Recurring Orders Processing (Every day at 9:00 AM)
+0 9 * * * www-data cd /var/www/html && php artisan recurring-orders:process >> /var/log/cron.log 2>&1
+
+# Log cleanup (Every Sunday at 2:00 AM)
+0 2 * * 0 www-data cd /var/www/html && php artisan telescope:prune --hours=168 >> /var/log/cron.log 2>&1
+
+# EOF - Empty line required

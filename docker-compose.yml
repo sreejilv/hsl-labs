@@ -1,0 +1,207 @@
+version: "3.8"
+
+services:
+  # Laravel Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsl-labs-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    networks:
+      - hsl-labs
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=hsl_labs
+      - DB_USERNAME=hsl_user
+      - DB_PASSWORD=hsl_password
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: hsl-labs-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/sites/:/etc/nginx/sites-available/
+      - ./docker/nginx/ssl/:/etc/ssl/certs/
+    networks:
+      - hsl-labs
+    depends_on:
+      - app
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: hsl-labs-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: hsl_labs
+      MYSQL_USER: hsl_user
+      MYSQL_PASSWORD: hsl_password
+      MYSQL_ROOT_PASSWORD: root_password
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - hsl-labs
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Redis Cache
+  redis:
+    image: redis:alpine
+    container_name: hsl-labs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - hsl-labs
+
+  # PHP-FPM for better performance (optional)
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: hsl-labs-php
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - hsl-labs
+    depends_on:
+      - mysql
+      - redis
+
+  # Node.js for asset compilation
+  node:
+    image: node:18-alpine
+    container_name: hsl-labs-node
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - hsl-labs
+
+  # Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsl-labs-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - hsl-labs
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=hsl_labs
+      - DB_USERNAME=hsl_user
+      - DB_PASSWORD=hsl_password
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+
+  # Scheduler (Cron Jobs)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hsl-labs-scheduler
+    restart: unless-stopped
+    command: sh -c "while true; do php artisan schedule:run >> /dev/null 2>&1; sleep 60; done"
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - hsl-labs
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=hsl_labs
+      - DB_USERNAME=hsl_user
+      - DB_PASSWORD=hsl_password
+
+  # PHPMyAdmin (Database Management)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: hsl-labs-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: hsl_user
+      PMA_PASSWORD: hsl_password
+      MYSQL_ROOT_PASSWORD: root_password
+    networks:
+      - hsl-labs
+    depends_on:
+      - mysql
+
+  # MailHog (Email Testing)
+  mailhog:
+    image: mailhog/mailhog
+    container_name: hsl-labs-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - hsl-labs
+
+# Networks
+networks:
+  hsl-labs:
+    driver: bridge
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
