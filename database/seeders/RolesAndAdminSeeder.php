@@ -7,6 +7,7 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\DoctorDetail;
+use App\Models\StaffDetail;
 use Illuminate\Support\Facades\Hash;
 
 class RolesAndAdminSeeder extends Seeder
@@ -69,8 +70,15 @@ class RolesAndAdminSeeder extends Seeder
             ['email' => 'staff@example.com'],
             [
                 'name' => 'Staff Member',
+                'first_name' => 'Jane',
+                'last_name' => 'Staff',
                 'password' => Hash::make('staff123'),
                 'email_verified_at' => now(),
+                'phone' => '+1 (555) 987-6543',
+                'date_of_birth' => '1990-05-15',
+                'gender' => 'female',
+                'address' => '456 Staff Street, Medical District, City 12345',
+                'is_active' => true,
             ]
         );
 
@@ -78,5 +86,25 @@ class RolesAndAdminSeeder extends Seeder
         if (!$staff->hasRole($staffRole)) {
             $staff->assignRole($staffRole);
         }
+
+        // Create staff details linking the staff to the surgeon
+        StaffDetail::firstOrCreate(
+            ['user_id' => $staff->id],
+            [
+                'staff_id' => 'STF001',
+                'department' => 'Medical',
+                'position' => 'Medical Assistant',
+                'hire_date' => now()->subMonths(6),
+                'salary' => 45000.00,
+                'shift' => 'day',
+                'is_active' => true,
+                'emergency_contact_name' => 'John Staff (Husband)',
+                'emergency_contact_phone' => '+1 (555) 555-1234',
+                'qualifications' => ['Medical Assistant Certification', 'CPR Certified'],
+                'notes' => 'Experienced medical assistant with excellent patient care skills.',
+                'created_by' => $surgeon->id,
+                'doctor_id' => $surgeon->id, // This is the crucial link!
+            ]
+        );
     }
 }

@@ -209,7 +209,6 @@ Once containers are running:
 | -------------------- | --------------------- | ----------------------- |
 | **Main Application** | http://localhost      | HSL Labs Medical Portal |
 | **PHPMyAdmin**       | http://localhost:8080 | Database Management     |
-| **MailHog**          | http://localhost:8025 | Email Testing           |
 
 ### 🐳 Docker Services
 
@@ -222,7 +221,6 @@ The Docker setup includes:
 -   **queue**: Queue worker for background jobs
 -   **scheduler**: Cron job scheduler
 -   **phpmyadmin**: Database management interface
--   **mailhog**: Email testing service
 
 ### 📋 Database Connection
 
@@ -257,9 +255,9 @@ docker-compose exec app composer update
 
 ---
 
-## 🧩 Vertical Slice Feature Testing
+## 🧩 Feature Testing
 
-You can run vertical slice (feature-based) development locally by running:
+You can run vertical slice development locally by running:
 
 ```bash
 php artisan serve
