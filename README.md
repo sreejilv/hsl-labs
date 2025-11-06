@@ -55,7 +55,7 @@ cd hsl-labs
 ### 2️⃣ Install Dependencies
 
 ```bash
-composer install
+composer update
 npm install
 npm run dev
 ```
